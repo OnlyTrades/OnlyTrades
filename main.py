@@ -2,265 +2,175 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
-from datetime import time
+from pathlib import Path
+import time
 
-# Helper Functions
-def time_to_seconds(t: time) -> float:
-    """Convert a datetime.time object to total seconds since midnight."""
-    return t.hour * 3600 + t.minute * 60 + t.second + t.microsecond / 1_000_000
+data = {}
+min_times = {}
+max_times = {}
+    
+def load_csv_data(csv_file):
+    print(csv_file)
+    df = pd.read_csv(csv_file)
+    print(df.head())
+    df['timestamp'] = pd.to_datetime(df['timestamp'], format='%H:%M:%S.%f').dt.time
+    min_time = df['timestamp'].min()
+    max_time = df['timestamp'].max()
+    
+    return df, min_time, max_time
 
-def seconds_to_time(seconds: float) -> time:
-    """Convert total seconds since midnight to a datetime.time object."""
-    return (datetime.min + timedelta(seconds=seconds)).time()
-# Initialize session state for slider_min and slider_max if not already done
-if 'slider_min_seconds' not in st.session_state:
-    st.session_state.slider_min_seconds = 0.0  # 00:00:00.000
-if 'slider_max_seconds' not in st.session_state:
-    st.session_state.slider_max_seconds = 86399.999  # 23:59:59.999
+def load_all_data():
+    dataset_path = "./TrainingData"
+    stocks = ["A", "B", "C", "D", "E"]
+    periods = [idx for idx in range(1, 16)]
+    for stock in stocks:
+        data[stock] = {}
+        min_times[stock] = {}
+        max_times[stock] = {}
+        
+        for period in periods:
+            csv_files = (
+                Path(dataset_path)
+                .joinpath(f"Period{period}")
+                .joinpath(stock)
+            )
+            for csv_file in csv_files.iterdir():
+                if str(csv_file.stem)!=f"market_data_{stock}_0":
+                    continue
+                data[stock][period], min_times[stock][period], max_times[stock][period] = load_csv_data(csv_file)
 
 
-# if 'slider_min' not in st.session_state:
-#     st.session_state.slider_min = time(0, 0, 0)  # Default to 00:00:00
-# if 'slider_max' not in st.session_state:
-#     st.session_state.slider_max = time(23, 59, 59)  # Default to 23:59:59
+def fetch_data(data, min_time, max_time):
+    stock = st.session_state.stock
+    period = st.session_state.period
+    return data[stock][period], min_time[stock][period], max_time[stock][period]
+         
 
-# hide_decoration_bar_style = '''
-#     <style>
-#         header {visibility: hidden;}
-#     </style>
-# '''
-# st.markdown(hide_decoration_bar_style, unsafe_allow_html=True)
 st.title('OnlyTrades')
 
-# if "a" not in st.session_state:
-#     st.session_state.a = 5
+with st.spinner('Loading data...'):
+    load_all_data()
+    print(data)
+st.success("Done!")
 
-# cols = st.columns(2)
-# minimum = cols[0].number_input("Min", 1, 5, key="min")
-# maximum = cols[1].number_input("Max", 6, 10, 10, key="max")
+stock_col, period_col, time_col = st.columns(3)
 
+# init
+st.session_state.stock = "A"
+st.session_state.period = 1
+st.session_state.display_data = data["A"][1]
+st.session_state.min_time = min_times["A"][1]
+st.session_state.max_time = max_times["A"][1]
+st.session_state.start_time = str(st.session_state.min_time)
+st.session_state.end_time = str(st.session_state.max_time)
+st.session_state.show_bid_price = True
+st.session_state.show_ask_price = True
+st.session_state.show_bid_volume = True
+st.session_state.show_ask_volume = True
 
-# # def update_value():
-# #     # Helper function to ensure consistency between widget parameters and value
-# #     st.session_state.a = min(st.session_state.a, maximum)
-# #     st.session_state.a = max(st.session_state.a, minimum)
-
-
-# # # Validate the slider value before rendering
-# # update_value()
-# st.slider("A", minimum, maximum, key="a")
-
-# Create two columns for the selectboxes
-col1, col2, col3 = st.columns(3)
-# with col1:
-#     option = st.selectbox(
-#         'Stock',
-#         ['A', 'B', 'C', 'D', 'E']
-#     )
-
-# with col2:
-#     option = st.selectbox(
-#         'Period',
-#         options=list(range(1, 16))  # List of numbers from 1 to 15
-
-#     )
-
-# # def updateSlider():
-# #     st.session_state.slider_max = df['timestamp'].max()
-# #     st.session_state.slider_min = df['timestamp'].min()
-#     #st.rerun()  # Rerun to update the slider with new max
-# # def updateSlider():
-# #         if 
-# #         st.session_state.slider_max = df['timestamp'].max()
-# #         st.session_state.slider_min = df['timestamp'].min()
-# # updateSlider()
-
-# # In the first column, create the start period selectbox
-# with col3:
-#     min_value, max_value = st.slider(
-#     'Select the range', 
-#     min_value=st.session_state.slider_min, 
-#     max_value=st.session_state.slider_max, 
-#     value=(st.session_state.slider_min, st.session_state.slider_max),  # Initial range selection
-#     format="HH:mm:ss"
-# )
-
-# st.write(f"You selected an interval from {min_value} to {max_value}.")
-
-# # Ensure that the end period is greater than or equal to the start period
-# if end_period < start_period:
-#     st.error("The end period must be greater than or equal to the start period.")
-
-
-uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
-# df = pd.read_csv(uploaded_file)
-
-if uploaded_file is not None:
-    # Load the data from the uploaded CSV file
-    df = pd.read_csv(uploaded_file)
-    df['timestamp'] = pd.to_datetime(df['timestamp'], format='%H:%M:%S.%f').dt.time
-    st.session_state.slider_max = df['timestamp'].max()
-    st.session_state.slider_min = df['timestamp'].min()
-    # updateSlider()
-    # Check if 'bidPrice' exists in the dataframe
-    if 'bidPrice' in df.columns:
-        # Streamlit title
-        st.title("Visualization")
-
-        # Display the dataframe in the app
-        # st.write(df)
-        # st.session_state.slider_max = df['timestamp'].max()
-        # st.session_state.slider_min = df['timestamp'].min()
-        # st.rerun()  # Rerun to update the slider with new max
-
-        # with col3:
-        #     min_value, max_value = st.slider(
-        #     'Select the range', 
-        #     min_value=minimum, 
-        #     max_value=maximum, 
-        #     # value=(10, 40),  # Initial range selection
-        # )
-
-        # Create the Plotly figure
-        fig1 = go.Figure()
-
-        # Add the bidPrice data as a line plot
-        fig1.add_trace(go.Scatter(
-            x=df['timestamp'], 
-            y=df['bidPrice'], 
-            mode='lines', 
-            name='Bid Price',
-            # text=df['bidPrice'],  # This is the value shown when hovering
-            hovertemplate='Index: %{x}<br>Bid Price: %{y}<extra></extra>',  # Custom tooltip
-            hoverinfo='none'
-        ))
-
-        # Update layout
-        fig1.update_layout(
-            title="Bid Price over Index",
-            xaxis_title="Index",
-            yaxis_title="Bid Price",
-            # showspikes=False,  # Removes the vertical spike line on hover
-            # showticklabels=False,
-            hovermode="x"  # Ensures hovering works well
-        )
-
-        # Show the interactive plot in Streamlit
+def on_content_change():
+    st.session_state.display_data, st.session_state.min_time, st.session_state.max_time = fetch_data(data, min_times, max_times)
+    
+def on_time_change():
+    current_data, _, _ = fetch_data(data, min_times, max_times)
+    try:
+        start_time = time.strptime(st.session_state.start_time, format='%H:%M:%S.%f')
+    except ValueError:
+        start_time = st.session_state.min_time
+        st.session_state.start_time = str(st.session_state.min_time)
+    try:
+        end_time = time.strptime(st.session_state.end_time, format='%H:%M:%S.%f')
+    except ValueError:
+        end_time = st.session_state.max_time
+        st.session_state.end_time = str(st.session_state.max_time)
         
-
-    else:
-        st.error("The CSV file does not contain a 'bidPrice' column. Please check the file format.")
-
-    # df = pd.read_csv(uploaded_file)
+    st.session_state.display_data = current_data.loc(
+        current_data["timestamp"] >= start_time
+        and current_data["timestamp"] <= end_time
+    )
     
-    # Check if 'bidPrice' exists in the dataframe
-    if 'bidPrice' in df.columns:
-        # Streamlit title
-        # st.title("Visualization")
-
-        # Display the dataframe in the app
-        # st.write(df)
-
-        # Create the Plotly figure
-        fig = go.Figure()
-
-        # Add the bidPrice data as a line plot
-        fig.add_trace(go.Scatter(
-            x=df['timestamp'], 
-            y=df['bidVolume'], 
-            mode='lines', 
-            name='Bid Volume',
-            text=df['bidVolume'],  # This is the value shown when hovering
-            hovertemplate='Index: %{x}<br>Bid Volume: %{y}<extra></extra>'  # Custom tooltip
-        ))
-
-        # Update layout
-        fig.update_layout(
-            title="Bid Volume over Index",
-            xaxis_title="Time",
-            yaxis_title="Bid Volume",
-            hovermode="x"  # Ensures hovering works well
-        )
-
-        # Show the interactive plot in Streamlit
-       
-
-    else:
-        st.error("The CSV file does not contain a 'bidPrice' column. Please check the file format.")
-
-
-    c1, c2 = st.columns(2)
-    with c1:
-            st.plotly_chart(fig1)
-    with c2:
-        st.plotly_chart(fig)
-with col1:
-    option = st.selectbox(
-        'Stock',
-        ['A', 'B', 'C', 'D', 'E']
+def on_display_change():
+    pass
+    
+with stock_col:
+    stock_option = st.selectbox(
+        label='Stock',
+        options=['A', 'B', 'C', 'D', 'E'],
+        key="stock",
+        on_change=on_content_change
     )
 
-with col2:
-    option = st.selectbox(
-        'Period',
-        options=list(range(1, 16))  # List of numbers from 1 to 15
-
+with period_col:
+    period_option = st.selectbox(
+        label='Period',
+        options=list(range(1, 16)),  # List of numbers from 1 to 15
+        key="period",
+        on_change=on_content_change
     )
 
-# def updateSlider():
-#     st.session_state.slider_max = df['timestamp'].max()
-#     st.session_state.slider_min = df['timestamp'].min()
-    #st.rerun()  # Rerun to update the slider with new max
-# def updateSlider():
-#         if 
-#         st.session_state.slider_max = df['timestamp'].max()
-#         st.session_state.slider_min = df['timestamp'].min()
-# updateSlider()
+with time_col:
+    _, min_time, max_time = fetch_data(data, min_times, max_times)
+    
+    start_time = st.text_input(
+        label="Start time",
+        key="start_time"
+    )
+    end_time = st.text_input(
+        label="End time",
+        key="end_time"
+    )
+    submit_botton = st.button(
+        label="Confirm",
+        on_click=on_time_change
+    )
 
-# In the first column, create the start period selectbox
-with col3:
-    print(st.session_state.slider_min)
-    min_value, max_value = st.slider(
-    'Select the range', 
-    min_value=st.session_state.slider_min, 
-    max_value=st.session_state.slider_max, 
-    step =  time(0, 0, 1),
-    value=(st.session_state.slider_min, st.session_state.slider_max),  # Initial range selection
-    format="HH:mm:ss"
+st.title("Bid Price & Ask Price")
+st.line_chart(
+    st.session_state.display_data,
+    x="timestamp",
+    y=["bidPrice", "askPrice"],
 )
-
-# st.write(f"You selected an interval from {min_value} to {max_value}.")
+#fig1 = go.Figure()
+#fig1.add_trace(go.Scatter(
+#    x=st.session_state.display_data['timestamp'], 
+#    y=st.session_state.display_data['bidPrice'], 
+#    mode='lines', 
+#    name='Bid Price',
+#    hovertemplate='Index: %{x}<br>Bid Price: %{y}<extra></extra>', 
+#    hoverinfo='none'
+#))
+## Update layout
+#fig1.update_layout(
+#    title="Bid Price over Index",
+#    xaxis_title="Index",
+#    yaxis_title="Bid Price",
+#    hovermode="x"
+#)
+## Show the interactive plot in Streamlit
+#    
+#fig = go.Figure()
+## Add the bidPrice data as a line plot
+#fig.add_trace(go.Scatter(
+#    x=st.session_state.display_data['timestamp'], 
+#    y=st.session_state.display_data['bidVolume'], 
+#    mode='lines', 
+#    name='Bid Volume',
+#    text=st.session_state.display_data['bidVolume'],  # This is the value shown when hovering
+#    hovertemplate='Index: %{x}<br>Bid Volume: %{y}<extra></extra>'  # Custom tooltip
+#))
+## Update layout
+#fig.update_layout(
+#    title="Bid Volume over Index",
+#    xaxis_title="Time",
+#    yaxis_title="Bid Volume",
+#    hovermode="x"  # Ensures hovering works well
+#)
+## Show the interactive plot in Streamlit
+   
     
-    # 
-    # 
-    # if 'timestamp' in df.columns:
-        # st.session_state.slider_max = df['timestamp'].max()
-        # st.session_state.slider_min = df['timestamp'].min()
-    #     st.rerun()  # Rerun to update the slider with new max
-    # else:
-    #     st.error("The 'timestamp' column is missing from the dataframe.")
-
-# if uploaded_file is not None:
-#     # Load the data from the uploaded CSV file
-#     df = pd.read_csv(uploaded_file)
+#c1, c2 = st.columns(2)
+#with c1:
+#        st.plotly_chart(fig1)
+#with c2:
+#    st.plotly_chart(fig)
     
-#     # Check if 'bidPrice' exists in the dataframe
-#     if 'bidPrice' in df.columns:
-#         # Streamlit title
-#         st.title("Bid Price Visualization")
-
-#         # Display the dataframe in the app
-#         # st.write(df)
-
-#         # Plot the data
-#         fig, ax = plt.subplots()
-#         ax.plot(df.index, df['bidPrice'], marker='o', color='b', label='Bid Price')
-#         ax.set_xlabel('Index')
-#         ax.set_ylabel('Bid Price')
-#         ax.set_title('Bid Price over Index')
-#         ax.legend()
-
-#         # Display the plot in Streamlit
-#         st.pyplot(fig)
-#     else:
-#         st.error("The CSV file does not contain a 'bidPrice' column. Please check the file format.")
