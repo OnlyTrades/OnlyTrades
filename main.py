@@ -4,14 +4,21 @@ import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import numpy as np
 
-
+# st.set_page_config(layout="wide")
 hide_decoration_bar_style = '''
     <style>
         header {visibility: hidden;}
-       body {
+        body {
             background-color: #241E3A;
             color: #C84E11;
-        }
+            margin-toop: 0;
+            padding-top: 0;
+        }   
+
+        # /* Ensure the main content stretches across the full width */
+        # .stApp {
+        #     width: 100% !important;
+        # }
 
         /* Ensure background of the entire Streamlit app is styled */
         .stApp {
@@ -38,12 +45,35 @@ hide_decoration_bar_style = '''
             color: #C84E11 !important;
         }
 
+        .centered-text {
+            font-size: 50px;
+            color: #C84E11;
+            text-align: center;
+        }
+        .st-emotion-cache-yw8pof {
+            padding-top: 0;
+        }
     </style>
+    <hr style='margin: 0; border: 20px solid #C84E11; width: 100%;' />
+    <div class="centered-text">OnlyTrades</div>
 '''
 st.markdown(hide_decoration_bar_style, unsafe_allow_html=True)
-st.title('OnlyTrades')
-
-
+# st.title('OnlyTrades')
+# st.markdown("""
+#     <style>
+#         .centered-text {
+#             font-size: 50px;
+#             color: #C84E11;
+#             text-align: center;
+#         }
+#     </style>
+#     <hr style='border: 2px solid #C84E11; width: 100%;' />
+#     <div class="centered-text">OnlyTrades</div>
+# """, unsafe_allow_html=True)
+# st.markdown(
+#     "<h1 style='text-align: center; font-size:48px; color:#C84E11;'>OnlyTrades</h1>",
+#     unsafe_allow_html=True
+# )
 # Create two columns for the selectboxes
 col1, col2, col3 = st.columns(3)
 with col1:
@@ -71,7 +101,8 @@ uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
 if uploaded_file is not None:
     # Load the data from the uploaded CSV file
     df = pd.read_csv(uploaded_file)
-    
+    df = df[df['period'] == 'Period1']
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
     # Check if 'bidPrice' exists in the dataframe
     if 'bidPrice' in df.columns:
         # Streamlit title
@@ -82,24 +113,32 @@ if uploaded_file is not None:
 
         # Create the Plotly figure
         fig1 = go.Figure()
+        # df['timestamp'] = pd.to_datetime(df['timestamp'])
 
         # Add the bidPrice data as a line plot
         fig1.add_trace(go.Scatter(
-            x=df['timestamp'].str[:8], 
+            x=df['timestamp'], 
             y=df['bidPrice'], 
             mode='lines', 
             name='Bid Price',
             text=df['bidPrice'],  # This is the value shown when hovering
-            hovertemplate='Index: %{x}<br>Bid Price: %{y}<extra></extra>'  # Custom tooltip
+            hovertemplate='Index: %{x}<br>Bid Price: %{y}<extra></extra>',  # Custom tooltip
+            line=dict(color='#C84E11', width=2)
         ))
         # tick_positions = np.linspace(0, len(df) - 1, 5).astype(int)
         # ticktext = [df['timestamp'].str[:8].iloc[i] for i in tick_positions]
 
         # Update layout
         fig1.update_layout(
-            title="Bid Price over Index",
-            xaxis_title="Index",
+            title="Bid Price over Time",
+            xaxis=dict(
+                tickformat="%H:%M:%S"
+            ),
+            xaxis_title="Time",
             yaxis_title="Bid Price",
+            paper_bgcolor =  "#2A264F",
+            plot_bgcolor ="#2A264F",
+            title_font=dict(color="#C84E11"),
             hovermode="x",  # Ensures hovering works well
             # xaxis=dict(
             #     tickvals=tick_positions,  # Positions of the ticks
@@ -120,10 +159,11 @@ if uploaded_file is not None:
 
             # Add the askPrice data as a line plot
             fig2.add_trace(go.Scatter(
-                x=df['timestamp'].str[:8], 
+                x=df['timestamp'], 
                 y=df['askPrice'], 
                 mode='lines', 
                 name='Ask Price',
+                line=dict(color='#C84E11', width=2),
                 text=df['askPrice'],  # This is the value shown when hovering
                 hovertemplate='Index: %{x}<br>Ask Price: %{y}<extra></extra>'  # Custom tooltip
             ))
@@ -132,10 +172,16 @@ if uploaded_file is not None:
 
             # Update layout
             fig2.update_layout(
-                title="Ask Price over Index",
-                xaxis_title="Index",
+                title="Ask Price over Time",
+                xaxis_title="Time",
                 yaxis_title="Ask Price",
+                xaxis=dict(
+                    tickformat="%H:%M:%S"
+                ),
                 hovermode="x",  # Ensures hovering works well
+                paper_bgcolor =  "#2A264F",
+                plot_bgcolor ="#2A264F",
+                title_font=dict(color="#C84E11"),
                 # xaxis=dict(
                 #     tickvals=tick_positions,  # Positions of the ticks
                 #     ticktext=ticktext
