@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
+import numpy as np
 
 
 hide_decoration_bar_style = '''
@@ -54,20 +55,26 @@ if uploaded_file is not None:
 
         # Add the bidPrice data as a line plot
         fig1.add_trace(go.Scatter(
-            x=df.index, 
+            x=df['timestamp'].str[:8], 
             y=df['bidPrice'], 
             mode='lines', 
             name='Bid Price',
             text=df['bidPrice'],  # This is the value shown when hovering
             hovertemplate='Index: %{x}<br>Bid Price: %{y}<extra></extra>'  # Custom tooltip
         ))
+        # tick_positions = np.linspace(0, len(df) - 1, 5).astype(int)
+        # ticktext = [df['timestamp'].str[:8].iloc[i] for i in tick_positions]
 
         # Update layout
         fig1.update_layout(
             title="Bid Price over Index",
             xaxis_title="Index",
             yaxis_title="Bid Price",
-            hovermode="closest"  # Ensures hovering works well
+            hovermode="x",  # Ensures hovering works well
+            # xaxis=dict(
+            #     tickvals=tick_positions,  # Positions of the ticks
+            #     ticktext=ticktext
+            # )
         )
 
         # Show the interactive plot in Streamlit
@@ -79,46 +86,46 @@ if uploaded_file is not None:
     # df = pd.read_csv(uploaded_file)
     
     # Check if 'bidPrice' exists in the dataframe
-    if 'bidPrice' in df.columns:
-        # Streamlit title
-        # st.title("Visualization")
+    # if 'bidPrice' in df.columns:
+    #     # Streamlit title
+    #     # st.title("Visualization")
 
-        # Display the dataframe in the app
-        # st.write(df)
+    #     # Display the dataframe in the app
+    #     # st.write(df)
 
-        # Create the Plotly figure
-        fig = go.Figure()
+    #     # Create the Plotly figure
+    #     fig = go.Figure()
 
-        # Add the bidPrice data as a line plot
-        fig.add_trace(go.Scatter(
-            x=df.index, 
-            y=df['bidVolume'], 
-            mode='lines', 
-            name='Bid Volume',
-            text=df['bidVolume'],  # This is the value shown when hovering
-            hovertemplate='Index: %{x}<br>Bid Volume: %{y}<extra></extra>'  # Custom tooltip
-        ))
+    #     # Add the bidPrice data as a line plot
+    #     fig.add_trace(go.Scatter(
+    #         x=df.index, 
+    #         y=df['bidVolume'], 
+    #         mode='lines', 
+    #         name='Bid Volume',
+    #         text=df['bidVolume'],  # This is the value shown when hovering
+    #         hovertemplate='Index: %{x}<br>Bid Volume: %{y}<extra></extra>'  # Custom tooltip
+    #     ))
 
-        # Update layout
-        fig.update_layout(
-            title="Bid Volume over Index",
-            xaxis_title="Index",
-            yaxis_title="Bid Volume",
-            hovermode="closest"  # Ensures hovering works well
-        )
+    #     # Update layout
+    #     fig.update_layout(
+    #         title="Bid Volume over Index",
+    #         xaxis_title="Index",
+    #         yaxis_title="Bid Volume",
+    #         hovermode="closest"  # Ensures hovering works well
+    #     )
 
-        # Show the interactive plot in Streamlit
+    #     # Show the interactive plot in Streamlit
        
 
-    else:
-        st.error("The CSV file does not contain a 'bidPrice' column. Please check the file format.")
+    # else:
+    #     st.error("The CSV file does not contain a 'bidPrice' column. Please check the file format.")
 
 
-    c1, c2 = st.columns(2)
-    with c1:
-            st.plotly_chart(fig1)
-    with c2:
-        st.plotly_chart(fig)
+    # c1, c2 = st.columns(2)
+    # with c1:
+    st.plotly_chart(fig1)
+    # with c2:
+    #     st.plotly_chart(fig)
 
 # if uploaded_file is not None:
 #     # Load the data from the uploaded CSV file
