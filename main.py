@@ -4,47 +4,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 from pathlib import Path
-    
-def load_csv_data(csv_file):
-    df = pd.read_csv(csv_file)
-    df['timestamp'] = pd.to_datetime(df['timestamp'], format='%H:%M:%S.%f')
-    min_time = df['timestamp'].min()
-    max_time = df['timestamp'].max()
-    
-    return df, min_time, max_time
-
-@st.cache_data
-def load_all_data():
-    data = {}
-    min_times = {}
-    max_times = {}
-    dataset_path = "./TrainingData"
-    stocks = ["A", "B", "C", "D", "E"]
-    periods = [idx for idx in range(1, 16)]
-    for stock in stocks:
-        data[stock] = {}
-        min_times[stock] = {}
-        max_times[stock] = {}
-        
-        for period in periods:
-            csv_files = (
-                Path(dataset_path)
-                .joinpath(f"Period{period}")
-                .joinpath(stock)
-            )
-            for csv_file in csv_files.iterdir():
-                if str(csv_file.stem)!=f"market_data_{stock}_0":
-                    continue
-                data[stock][period], min_times[stock][period], max_times[stock][period] = load_csv_data(csv_file)
-    
-    return data, min_times, max_times
-
-
-def fetch_data(data, min_times, max_times):
-    stock = st.session_state.stock
-    period = st.session_state.period
-    return data[stock][period], min_times[stock][period], max_times[stock][period]
-         
 hide_decoration_bar_style = '''
     <style>
         header {visibility: hidden;}
@@ -93,11 +52,59 @@ hide_decoration_bar_style = '''
         .st-emotion-cache-yw8pof {
             padding-top: 0;
         }
+        .st-emotion-cache-1r4qj8v {
+
+        background-color: #241E3A;
+        }
+        h1, h2, h3, h4, h5, h6, p {
+            color: #C84E11 !important;
+        }
     </style>
     <hr style='margin: 0; border: 20px solid #C84E11; width: 100%;' />
     <div class="centered-text">OnlyTrades</div>
 '''
-st.markdown(hide_decoration_bar_style, unsafe_allow_html=True)
+st.markdown(hide_decoration_bar_style, unsafe_allow_html=True) 
+def load_csv_data(csv_file):
+    df = pd.read_csv(csv_file)
+    df['timestamp'] = pd.to_datetime(df['timestamp'], format='%H:%M:%S.%f')
+    min_time = df['timestamp'].min()
+    max_time = df['timestamp'].max()
+    
+    return df, min_time, max_time
+
+@st.cache_data
+def load_all_data():
+    data = {}
+    min_times = {}
+    max_times = {}
+    dataset_path = "./TrainingData"
+    stocks = ["A", "B", "C", "D", "E"]
+    periods = [idx for idx in range(1, 16)]
+    for stock in stocks:
+        data[stock] = {}
+        min_times[stock] = {}
+        max_times[stock] = {}
+        
+        for period in periods:
+            csv_files = (
+                Path(dataset_path)
+                .joinpath(f"Period{period}")
+                .joinpath(stock)
+            )
+            for csv_file in csv_files.iterdir():
+                if str(csv_file.stem)!=f"market_data_{stock}_0":
+                    continue
+                data[stock][period], min_times[stock][period], max_times[stock][period] = load_csv_data(csv_file)
+    
+    return data, min_times, max_times
+
+
+def fetch_data(data, min_times, max_times):
+    stock = st.session_state.stock
+    period = st.session_state.period
+    return data[stock][period], min_times[stock][period], max_times[stock][period]
+         
+
 
 data, min_times, max_times = load_all_data()
 
@@ -211,6 +218,9 @@ price_figure.update_layout(
     legend_title="Lines",
     template="plotly_white",
     hovermode="x",
+    paper_bgcolor =  "#2A264F",
+    plot_bgcolor ="#2A264F",
+    title_font=dict(color="#C84E11"),
     xaxis=dict(
         tickformat='%H:%M:%S.%f',
         dtick=600000
@@ -240,6 +250,9 @@ volume_figure.update_layout(
     yaxis_title="Volume",
     legend_title="Lines",
     template="plotly_white",
+    paper_bgcolor =  "#2A264F",
+    plot_bgcolor ="#2A264F",
+    title_font=dict(color="#C84E11"),
     hovermode="x",
     xaxis=dict(
         tickformat='%H:%M:%S.%f',
