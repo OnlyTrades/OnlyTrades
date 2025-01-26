@@ -7,7 +7,7 @@ from pathlib import Path
     
 def load_csv_data(csv_file):
     df = pd.read_csv(csv_file)
-    df['timestamp'] = pd.to_datetime(df['timestamp'], format='%H:%M:%S')
+    df['timestamp'] = pd.to_datetime(df['timestamp'], format='%H:%M:%S.%f')
     min_time = df['timestamp'].min()
     max_time = df['timestamp'].max()
     
@@ -18,9 +18,9 @@ def load_all_data():
     data = {}
     min_times = {}
     max_times = {}
-    dataset_path = "./TestData"
+    dataset_path = "./TrainingData"
     stocks = ["A", "B", "C", "D", "E"]
-    periods = [idx for idx in range(16, 21)]
+    periods = [idx for idx in range(1, 16)]
     for stock in stocks:
         data[stock] = {}
         min_times[stock] = {}
@@ -107,16 +107,16 @@ stock_col, time_col = st.columns(2)
 if st.session_state.get("stock") is None:
     st.session_state.stock = "A"
 if st.session_state.get("period") is None:
-    st.session_state.period = 16
+    st.session_state.period = 1
 stock = st.session_state.stock
 period = st.session_state.period
 st.session_state.display_data = data[stock][period]
 st.session_state.min_time = min_times[stock][period]
 st.session_state.max_time = max_times[stock][period]
 if st.session_state.get("start_time") is None:
-    st.session_state.start_time = st.session_state.min_time.strftime(format='%H:%M:%S')
+    st.session_state.start_time = st.session_state.min_time.strftime(format='%H:%M:%S.%f')
 if st.session_state.get("end_time") is None:
-    st.session_state.end_time = st.session_state.max_time.strftime(format='%H:%M:%S')
+    st.session_state.end_time = st.session_state.max_time.strftime(format='%H:%M:%S.%f')
 if st.session_state.get("displayed_price") is None:
     st.session_state.displayed_price = ["bidPrice", "askPrice"]
 if st.session_state.get("displayed_volume") is None:
@@ -124,18 +124,18 @@ if st.session_state.get("displayed_volume") is None:
 
 def on_content_change():
     st.session_state.display_data, st.session_state.min_time, st.session_state.max_time = fetch_data(data, min_times, max_times)
-    st.session_state.start_time = st.session_state.min_time.strftime(format='%H:%M:%S')
-    st.session_state.end_time = st.session_state.max_time.strftime(format='%H:%M:%S')
+    st.session_state.start_time = st.session_state.min_time.strftime(format='%H:%M:%S.%f')
+    st.session_state.end_time = st.session_state.max_time.strftime(format='%H:%M:%S.%f')
     
 def on_time_change():
     current_data, _, _ = fetch_data(data, min_times, max_times)
     try:
-        start_time = datetime.strptime(st.session_state.start_time, format='%H:%M:%S')
+        start_time = datetime.strptime(st.session_state.start_time, '%H:%M:%S.%f')
     except ValueError:
         start_time = st.session_state.min_time
         st.session_state.start_time = str(st.session_state.min_time)
     try:
-        end_time = datetime.strptime(st.session_state.end_time, format='%H:%M:%S')
+        end_time = datetime.strptime(st.session_state.end_time, '%H:%M:%S.%f')
     except ValueError:
         end_time = st.session_state.max_time
         st.session_state.end_time = str(st.session_state.max_time)
@@ -167,7 +167,7 @@ with stock_col:
     )
     period_option = st.selectbox(
         label='Period',
-        options=list(range(16, 21)),  # List of numbers from 1 to 15
+        options=list(range(1, 16)),  # List of numbers from 1 to 15
         key="period",
         on_change=on_content_change
     )
@@ -212,7 +212,7 @@ price_figure.update_layout(
     template="plotly_white",
     hovermode="x",
     xaxis=dict(
-        tickformat='%H:%M:%S',
+        tickformat='%H:%M:%S.%f',
         dtick=600000
     )
 )
@@ -242,7 +242,7 @@ volume_figure.update_layout(
     template="plotly_white",
     hovermode="x",
     xaxis=dict(
-        tickformat='%H:%M:%S',
+        tickformat='%H:%M:%S.%f',
         dtick=600000
     )
 )
